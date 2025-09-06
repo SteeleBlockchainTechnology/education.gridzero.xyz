@@ -1,31 +1,51 @@
 name: lms
 services:
   mariadb:
-    image: mariadb:10.8
+    image: mariadb:10.6
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
       - --skip-character-set-client-handshake
       - --skip-innodb-read-only-compressed # Temporary fix for MariaDB 10.6
     environment:
-      MYSQL_ROOT_PASSWORD: 123
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set in .env}
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
     volumes:
       - mariadb-data:/var/lib/mysql
 
   redis:
-    image: redis:alpine
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
 
   frappe:
-    image: frappe/bench:latest
+    # Pin via BENCH_IMAGE in .env, defaulting to version-14
+    image: ${BENCH_IMAGE:-frappe/bench:version-14}
     command: bash /workspace/init.sh
     environment:
       - SHELL=/bin/bash
     working_dir: /home/frappe
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
     volumes:
       - .:/workspace
     ports:
-      - 8000:8000
-      - 9000:9000
+      # Bind to localhost only; front with Nginx for public access
+      - 127.0.0.1:8000:8000
+      - 127.0.0.1:9000:9000
 
 volumes:
   mariadb-data:
