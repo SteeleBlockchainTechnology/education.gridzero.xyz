@@ -10,13 +10,17 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set in .env}
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      test: ["CMD-SHELL", "mysqladmin ping -uroot -p$${MYSQL_ROOT_PASSWORD} --silent"]
       interval: 5s
       timeout: 3s
       retries: 30
     restart: unless-stopped
     volumes:
       - mariadb-data:/var/lib/mysql
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   redis:
     image: redis:7-alpine
@@ -26,6 +30,10 @@ services:
       timeout: 3s
       retries: 30
     restart: unless-stopped
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   frappe:
     # Pin via BENCH_IMAGE in .env, defaulting to version-14
@@ -49,9 +57,12 @@ services:
       - .:/workspace
       - sites-data:/home/frappe/frappe-bench/sites
     ports:
-      # Bind to localhost only; front with Nginx for public access
       - 127.0.0.1:8000:8000
       - 127.0.0.1:9000:9000
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   mariadb-data:
