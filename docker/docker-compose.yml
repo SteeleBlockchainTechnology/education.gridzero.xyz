@@ -55,7 +55,7 @@ services:
     restart: unless-stopped
     volumes:
       - .:/workspace
-      - sites-data:/home/frappe/frappe-bench/sites
+      # - sites-data:/home/frappe/frappe-bench/sites  # TEMP comment for first boot
     ports:
       - 127.0.0.1:8000:8000
       - 127.0.0.1:9000:9000
@@ -66,4 +66,4 @@ services:
 
 volumes:
   mariadb-data:
-  sites-data:
+  # sites-data:  # TEMP comment for first boot
